@@ -60,3 +60,12 @@ def b64_encode_local_file(path: PATH):
     mediatype = mimetypes.guess_type(path)[0]
     with open(path, 'rb') as fin:
         return b64_encode_data_url(mediatype, fin.read())
+
+
+def guess_content_type(content: bytes):
+    if content.startswith(b'%PDF-'):
+        return 'application/pdf'
+    if content.startswith(b'\x89PNG\r\n\x1a\n'):
+        return 'image/png'
+    if content.startswith(b'\xFF\xD8\xFF'):
+        return 'image/jpeg'
