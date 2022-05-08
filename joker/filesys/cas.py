@@ -3,6 +3,7 @@
 
 import dataclasses
 import hashlib
+import os
 import shutil
 from functools import cached_property
 from os import PathLike
@@ -44,6 +45,15 @@ class ContentAddressedStorage:
     def guess_content_type(self, cid: str):
         with open(self.get_path(cid), 'rb') as fin:
             return utils.guess_content_type(fin.read(64))
+
+    def _iter_paths(self) -> Iterable[str]:
+        for dirpath, _, filenames in os.walk(self.base_path):
+            for filename in filenames:
+                yield os.path.join(dirpath, filename)
+
+    def _iter_cids(self) -> Iterable[str]:
+        for triple in os.walk(self.base_path):
+            yield from triple[2]
 
     def exists(self, cid: str) -> bool:
         path = self.get_path(cid)
