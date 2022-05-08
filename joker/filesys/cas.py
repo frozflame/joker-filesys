@@ -76,7 +76,7 @@ class ContentAddressedStorage:
 
     def save(self, chunks: Iterable[bytes]):
         ho = hashlib.new(self.hash_algo)
-        tmppath = self.base_path / str(uuid1())
+        tmppath = self.base_path / f'tmp.{uuid1()}'
         try:
             with open(tmppath, 'wb') as fout:
                 for chunk in chunks:
