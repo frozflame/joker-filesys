@@ -16,7 +16,7 @@ from joker.filesys import utils
 @dataclasses.dataclass
 class ContentAddressedStorage:
     base_dir: PathLike
-    hash_algo: str = 'sha1'
+    hash_algo: str = 'sha256'
     dir_depth: int = 2
     chunksize: int = 4096
 
