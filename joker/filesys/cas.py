@@ -28,12 +28,7 @@ class ContentAddressedStorage:
         return Path(self.base_dir)
 
     def get_path(self, cid: str) -> Path:
-        names = []
-        for i in range(self.dir_depth):
-            start = i * 2
-            stop = start + 2
-            names.append(cid[start: stop])
-        names.append(cid)
+        names = utils.spread_by_prefix(cid, self.dir_depth)
         return self.base_path.joinpath(*names)
 
     def check_integrity(self, cid: str) -> bool:

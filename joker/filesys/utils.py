@@ -4,6 +4,7 @@
 import base64
 import hashlib
 import mimetypes
+import os
 from os import PathLike
 from typing import Generator, Union, Iterable
 
@@ -60,6 +61,25 @@ def b64_encode_local_file(path: PATH):
     mediatype = mimetypes.guess_type(path)[0]
     with open(path, 'rb') as fin:
         return b64_encode_data_url(mediatype, fin.read())
+
+
+def spread_by_prefix(filename: str, depth: int = 2):
+    names = []
+    for i in range(depth):
+        start = i * 2
+        stop = start + 2
+        part = filename[start: stop]
+        if not part:
+            break
+        names.append(part)
+    names.append(filename)
+    return names
+
+
+def random_hex(length=24) -> str:
+    size = sum(divmod(length, 2))
+    bs = os.urandom(size)
+    return bs.hex()[:length]
 
 
 def guess_content_type(content: bytes):
