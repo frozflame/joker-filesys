@@ -24,7 +24,7 @@ class Repository(DirectoryBoundToolkit):
             raise NotADirectoryError(dotgit_dir)
         super().__init__(path)
 
-    def under_dotgit_dir(self, *paths):
+    def under_dotgit_dir(self, *paths) -> str:
         return self.under('.git', *paths)
 
     @classmethod

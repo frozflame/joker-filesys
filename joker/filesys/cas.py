@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+from __future__ import annotations
+
 import dataclasses
 import hashlib
 import os
@@ -59,7 +61,7 @@ class ContentAddressedStorage:
         if path.is_file():
             path.unlink(missing_ok=True)
 
-    def load(self, cid: str):
+    def load(self, cid: str) -> Iterable[bytes]:
         path = self.get_path(cid)
         if not path.is_file():
             return
@@ -69,7 +71,7 @@ class ContentAddressedStorage:
                 yield chunk
                 chunk = fin.read(self.chunksize)
 
-    def save(self, chunks: Iterable[bytes]):
+    def save(self, chunks: Iterable[bytes]) -> str:
         ho = hashlib.new(self.hash_algo)
         tmppath = self.base_path / f'tmp.{uuid1()}'
         try:

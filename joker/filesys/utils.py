@@ -52,18 +52,18 @@ def checksum_hexdigest(path: PATH, algo='sha1', length=-1, offset=0):
     return hashobj.hexdigest()
 
 
-def b64_encode_data_url(mediatype: str, content: bytes):
+def b64_encode_data_url(mediatype: str, content: bytes) -> str:
     b64 = base64.b64encode(content).decode('ascii')
     return 'data:{};base64,{}'.format(mediatype, b64)
 
 
-def b64_encode_local_file(path: PATH):
+def b64_encode_local_file(path: PATH) -> str:
     mediatype = mimetypes.guess_type(path)[0]
     with open(path, 'rb') as fin:
         return b64_encode_data_url(mediatype, fin.read())
 
 
-def spread_by_prefix(filename: str, depth: int = 2):
+def spread_by_prefix(filename: str, depth: int = 2) -> list:
     names = []
     for i in range(depth):
         start = i * 2

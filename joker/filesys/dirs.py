@@ -23,13 +23,13 @@ class DirectoryBoundToolkit:
         return new_path.name
 
     @staticmethod
-    def gen_tmp_filename(ext: str):
+    def gen_tmp_filename(ext: str) -> str:
         return f'tmp.{uuid.uuid1()}{ext}'
 
-    def under(self, *paths):
+    def under(self, *paths) -> str:
         return os.path.join(self.base_dir, *paths)
 
-    def relative_to_base_dir(self, path: str):
+    def relative_to_base_dir(self, path: str) -> str:
         path = os.path.abspath(path)
         return os.path.relpath(path, self.base_dir)
 
@@ -47,12 +47,12 @@ class DirectoryBoundToolkit:
         path = self.under_base_dir(path)
         return utils.checksum_hexdigest(path, algo=algo)
 
-    def read_as_binary(self, path: str):
+    def read_as_binary(self, path: str) -> bytes:
         path = self.under_base_dir(path)
         with open(path, 'rb') as fin:
             return fin.read()
 
-    def read_as_base64_data_url(self, path: str):
+    def read_as_base64_data_url(self, path: str) -> str:
         path = self.under_base_dir(path)
         return utils.b64_encode_local_file(path)
 
@@ -73,23 +73,23 @@ class MappedDirectory(DirectoryBoundToolkit):
             base_url += '/'
         self.base_url = base_url
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         c = self.__class__.__name__
         return '{}({!r}, {!r})'.format(c, self.base_dir, self.base_url)
 
-    def join_url(self, path: str):
+    def join_url(self, path: str) -> str:
         return urllib.parse.urljoin(self.base_url, path)
 
-    def relative_to_base_url(self, url: str):
+    def relative_to_base_url(self, url: str) -> str:
         base_url_path = urllib.parse.urlparse(self.base_url).path
         url_path = urllib.parse.urlparse(url).path
         return os.path.relpath(url_path, base_url_path)
 
-    def convert_local_path_to_url(self, path: str):
+    def convert_local_path_to_url(self, path: str) -> str:
         path = os.path.abspath(path)
         path = self.relative_to_base_dir(path)
         return self.join_url(path)
 
-    def convert_url_to_local_path(self, url: str):
+    def convert_url_to_local_path(self, url: str) -> str:
         path = self.relative_to_base_url(url)
         return self.under(path)
