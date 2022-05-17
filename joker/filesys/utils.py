@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import math
 import mimetypes
 import os
 from typing import Generator, Union, Iterable
@@ -74,6 +75,11 @@ def spread_by_prefix(filename: str, depth: int = 2) -> list:
         names.append(part)
     names.append(filename)
     return names
+
+
+def compute_collision_probability(buckets: int, balls: int) -> float:
+    x = - balls * (balls - 1) / 2. / buckets
+    return 1. - math.exp(x)
 
 
 def random_hex(length=24) -> str:
