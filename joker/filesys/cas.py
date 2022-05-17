@@ -2,10 +2,11 @@
 # coding: utf-8
 from __future__ import annotations
 
-import dataclasses
 import hashlib
 import os
 import shutil
+import warnings
+from dataclasses import dataclass, field
 from functools import cached_property
 from os import PathLike
 from pathlib import Path
@@ -13,9 +14,10 @@ from typing import Iterable
 from uuid import uuid1
 
 from joker.filesys import utils
+from joker.filesys.utils import PathLike
 
 
-@dataclasses.dataclass
+@dataclass
 class ContentAddressedStorage:
     base_dir: PathLike
     hash_algo: str = 'sha256'
@@ -23,14 +25,23 @@ class ContentAddressedStorage:
     chunksize: int = 4096
 
     @cached_property
-    def base_path(self) -> Path:
+    def _base_path(self) -> Path:
         if isinstance(self.base_dir, Path):
             return self.base_dir
         return Path(self.base_dir)
 
+    @cached_property
+    def base_path(self) -> Path:
+        msg = (
+            "ContentAddressedStorage.base_path is deprecated, "
+            "and will be remove in version 0.2.0."
+        )
+        warnings.warn(msg, DeprecationWarning)
+        return self._base_path
+
     def get_path(self, cid: str) -> Path:
         names = utils.spread_by_prefix(cid, self.dir_depth)
-        return self.base_path.joinpath(*names)
+        return self._base_path.joinpath(*names)
 
     def check_integrity(self, cid: str) -> bool:
         ho = hashlib.new(self.hash_algo)
@@ -42,13 +53,16 @@ class ContentAddressedStorage:
         with open(self.get_path(cid), 'rb') as fin:
             return utils.guess_content_type(fin.read(64))
 
+    def _walk(self) -> Iterable[tuple]:
+        return os.walk(self._base_path)
+
     def _iter_paths(self) -> Iterable[str]:
-        for dirpath, _, filenames in os.walk(self.base_path):
+        for dirpath, _, filenames in self._walk():
             for filename in filenames:
                 yield os.path.join(dirpath, filename)
 
     def _iter_cids(self) -> Iterable[str]:
-        for triple in os.walk(self.base_path):
+        for triple in self._walk():
             yield from triple[2]
 
     def exists(self, cid: str) -> bool:
@@ -72,7 +86,7 @@ class ContentAddressedStorage:
 
     def save(self, chunks: Iterable[bytes]) -> str:
         ho = hashlib.new(self.hash_algo)
-        tmppath = self.base_path / f'tmp.{uuid1()}'
+        tmppath = self._base_path / f'tmp.{uuid1()}'
         try:
             with open(tmppath, 'wb') as fout:
                 for chunk in chunks:
@@ -90,4 +104,35 @@ class ContentAddressedStorage:
         return cid
 
 
-__all__ = ['ContentAddressedStorage']
+@dataclass
+class JointContentAddressedStorage(ContentAddressedStorage):
+    extra_dirs: dict[str, PathLike] = field(default_factory=dict)
+
+    def _walk(self) -> Iterable[tuple]:
+        yield from os.walk(self.base_dir)
+        for dir_ in self.extra_dirs.values():
+            yield from os.walk(dir_)
+
+    @cached_property
+    def _prefix_lengths(self) -> list[int]:
+        lengths = {len(prefix) for prefix in self.extra_dirs}
+        lengths = list(lengths)
+        lengths.sort(reverse=True)
+        return lengths
+
+    def _get_base_path(self, cid: str) -> Path:
+        if not self.extra_dirs:
+            return self._base_path
+        for length in self._prefix_lengths:
+            prefix = cid[:length]
+            if prefix in self.extra_dirs:
+                return Path(self.extra_dirs[prefix])
+        return self._base_path
+
+    def get_path(self, cid: str) -> Path:
+        base_path = self._get_base_path(cid)
+        names = utils.spread_by_prefix(cid, self.dir_depth)
+        return base_path.joinpath(*names)
+
+
+__all__ = ['ContentAddressedStorage', 'JointContentAddressedStorage']
