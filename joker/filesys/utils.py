@@ -6,14 +6,13 @@ import base64
 import hashlib
 import mimetypes
 import os
-from os import PathLike
 from typing import Generator, Union, Iterable
 
-PATH = Union[str, PathLike]
-FILE = Union[str, PathLike, Iterable[bytes]]
+PathLike = Union[str, os.PathLike]
+FileLike = Union[str, os.PathLike, Iterable[bytes]]
 
 
-def read_as_chunks(path: PATH, length=-1, offset=0, chunksize=65536) \
+def read_as_chunks(path: PathLike, length=-1, offset=0, chunksize=65536) \
         -> Generator[bytes, None, None]:
     if length == 0:
         return
@@ -31,7 +30,7 @@ def read_as_chunks(path: PATH, length=-1, offset=0, chunksize=65536) \
             chunksize = min(chunksize, length)
 
 
-def compute_checksum(path_or_chunks: FILE, algo='sha1'):
+def compute_checksum(path_or_chunks: FileLike, algo='sha1'):
     hashobj = hashlib.new(algo) if isinstance(algo, str) else algo
     # path_or_chunks:str - a path
     if isinstance(path_or_chunks, str):
@@ -43,12 +42,12 @@ def compute_checksum(path_or_chunks: FILE, algo='sha1'):
     return hashobj
 
 
-def checksum(path: PATH, algo='sha1', length=-1, offset=0):
+def checksum(path: PathLike, algo='sha1', length=-1, offset=0):
     chunks = read_as_chunks(path, length=length, offset=offset)
     return compute_checksum(chunks, algo=algo)
 
 
-def checksum_hexdigest(path: PATH, algo='sha1', length=-1, offset=0):
+def checksum_hexdigest(path: PathLike, algo='sha1', length=-1, offset=0):
     hashobj = checksum(path, algo=algo, length=length, offset=offset)
     return hashobj.hexdigest()
 
@@ -58,7 +57,7 @@ def b64_encode_data_url(mediatype: str, content: bytes) -> str:
     return 'data:{};base64,{}'.format(mediatype, b64)
 
 
-def b64_encode_local_file(path: PATH) -> str:
+def b64_encode_local_file(path: PathLike) -> str:
     mediatype = mimetypes.guess_type(path)[0]
     with open(path, 'rb') as fin:
         return b64_encode_data_url(mediatype, fin.read())
