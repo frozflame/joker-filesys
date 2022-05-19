@@ -64,11 +64,11 @@ def b64_encode_local_file(path: PathLike) -> str:
         return b64_encode_data_url(mediatype, fin.read())
 
 
-def spread_by_prefix(filename: str, depth: int = 2) -> list:
+def spread_by_prefix(filename: str, depth: int = 2, width: int = 2) -> list:
     names = []
     for i in range(depth):
-        start = i * 2
-        stop = start + 2
+        start = i * width
+        stop = start + width
         part = filename[start: stop]
         if not part:
             break
