@@ -84,23 +84,34 @@ class ContentAddressedStorage:
                 yield chunk
                 chunk = fin.read(self.chunksize)
 
+    @staticmethod
+    def _unlink(*paths: Path | None):
+        for path in paths:
+            if path is None:
+                continue
+            path.unlink(missing_ok=True)
+
     def save(self, chunks: Iterable[bytes]) -> str:
         ho = hashlib.new(self.hash_algo)
-        tmppath = self._base_path / f'tmp.{uuid1()}'
+        tmppath1 = self._base_path / f'tmp.{uuid1()}'
+        tmppath2 = None
         try:
-            with open(tmppath, 'wb') as fout:
+            with open(tmppath1, 'wb') as fout:
                 for chunk in chunks:
                     ho.update(chunk)
                     fout.write(chunk)
             cid = ho.hexdigest()
             path = self.get_path(cid)
             path.parent.mkdir(parents=True, exist_ok=True)
-            # ignore duplicating content file
-            shutil.move(tmppath, path)
+            # tmppath1 and path are possibly on different volumes
+            # tmppath2 and path are surely on the same volume
+            tmppath2 = path.parent / tmppath1.name
+            shutil.move(tmppath1, tmppath2)
+            shutil.move(tmppath2, path)
             ho = None
         finally:
-            if ho is not None and tmppath.is_file():
-                tmppath.unlink(missing_ok=True)
+            if ho is not None:
+                self._unlink(tmppath1, tmppath2)
         return cid
 
 
