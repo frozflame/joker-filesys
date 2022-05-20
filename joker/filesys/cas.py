@@ -40,6 +40,15 @@ class ContentAddressedStorage:
         return self._base_path
 
     def get_path(self, cid: str) -> Path:
+        msg = (
+            "ContentAddressedStorage.get_path() is deprecated, "
+            "and will be remove in version 0.2.0.; "
+            "use ContentAddressedStorage.locate() instead."
+        )
+        warnings.warn(msg, DeprecationWarning)
+        return self.locate(cid)
+
+    def locate(self, cid: str) -> Path:
         names = utils.spread_by_prefix(cid, self.dir_depth)
         return self._base_path.joinpath(*names)
 
@@ -50,7 +59,7 @@ class ContentAddressedStorage:
         return ho.hexdigest() == cid
 
     def guess_content_type(self, cid: str):
-        with open(self.get_path(cid), 'rb') as fin:
+        with open(self.locate(cid), 'rb') as fin:
             return utils.guess_content_type(fin.read(64))
 
     def _walk(self) -> Iterable[tuple]:
@@ -66,16 +75,16 @@ class ContentAddressedStorage:
             yield from triple[2]
 
     def exists(self, cid: str) -> bool:
-        path = self.get_path(cid)
+        path = self.locate(cid)
         return path.is_file()
 
     def delete(self, cid: str):
-        path = self.get_path(cid)
+        path = self.locate(cid)
         if path.is_file():
             path.unlink(missing_ok=True)
 
     def load(self, cid: str) -> Iterable[bytes]:
-        path = self.get_path(cid)
+        path = self.locate(cid)
         if not path.is_file():
             return
         with open(path, 'rb') as fin:
@@ -84,34 +93,26 @@ class ContentAddressedStorage:
                 yield chunk
                 chunk = fin.read(self.chunksize)
 
-    @staticmethod
-    def _unlink(*paths: Path | None):
-        for path in paths:
-            if path is None:
-                continue
-            path.unlink(missing_ok=True)
+    def admit(self, src: Path, cid: str):
+        # src and path are possibly on the same volume
+        path = self.locate(cid)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(src, path)
 
     def save(self, chunks: Iterable[bytes]) -> str:
         ho = hashlib.new(self.hash_algo)
-        tmppath1 = self._base_path / f'tmp.{uuid1()}'
-        tmppath2 = None
+        tmp = self._base_path / f'tmp.{uuid1()}'
         try:
-            with open(tmppath1, 'wb') as fout:
+            with open(tmp, 'wb') as fout:
                 for chunk in chunks:
                     ho.update(chunk)
                     fout.write(chunk)
             cid = ho.hexdigest()
-            path = self.get_path(cid)
-            path.parent.mkdir(parents=True, exist_ok=True)
-            # tmppath1 and path are possibly on different volumes
-            # tmppath2 and path are surely on the same volume
-            tmppath2 = path.parent / tmppath1.name
-            shutil.move(tmppath1, tmppath2)
-            shutil.move(tmppath2, path)
+            self.admit(tmp, cid)
             ho = None
         finally:
             if ho is not None:
-                self._unlink(tmppath1, tmppath2)
+                tmp.unlink(missing_ok=True)
         return cid
 
 
@@ -140,10 +141,23 @@ class JointContentAddressedStorage(ContentAddressedStorage):
                 return Path(self.extra_dirs[prefix])
         return self._base_path
 
-    def get_path(self, cid: str) -> Path:
+    def locate(self, cid: str) -> Path:
         base_path = self._get_base_path(cid)
         names = utils.spread_by_prefix(cid, self.dir_depth)
         return base_path.joinpath(*names)
+
+    def admit(self, src: Path, cid: str):
+        # src and path are possibly on different volumes
+        # tmp and path are surely on the same volume
+        path = self.locate(cid)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.parent / f'tmp.{cid}'
+        try:
+            shutil.move(src, tmp)
+            shutil.move(tmp, path)
+        finally:
+            if tmp.exists():
+                tmp.unlink(missing_ok=True)
 
 
 __all__ = ['ContentAddressedStorage', 'JointContentAddressedStorage']
