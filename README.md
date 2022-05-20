@@ -4,6 +4,14 @@ joker-filesys
 recent changes
 --------------
 
+### version 0.1.5
+
+- add `ContentAddressedStorage.admit()`
+- rename `CAS.base_path` => `CAS._base_path`
+- rename `CAS.get_path` => `CAS.locate`
+- add argument `width` to `spread_by_prefix()`
+- fix an integrity issue on `JointContentAddressedStorage`
+
 ### version 0.1.4
 
 - add `JointContentAddressedStorage`

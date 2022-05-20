@@ -96,8 +96,7 @@ class ContentAddressedStorage:
     def admit(self, src: Path, cid: str):
         # src and path are possibly on the same volume
         path = self.locate(cid)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(src, path)
+        os.renames(src, path)
 
     def save(self, chunks: Iterable[bytes]) -> str:
         ho = hashlib.new(self.hash_algo)
@@ -154,7 +153,7 @@ class JointContentAddressedStorage(ContentAddressedStorage):
         tmp = path.parent / f'tmp.{cid}'
         try:
             shutil.move(src, tmp)
-            shutil.move(tmp, path)
+            os.rename(tmp, path)
         finally:
             if tmp.exists():
                 tmp.unlink(missing_ok=True)
