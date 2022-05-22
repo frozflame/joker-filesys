@@ -4,6 +4,12 @@ joker-filesys
 recent changes
 --------------
 
+### version 0.2.0
+- add functions `utils.{moves,gen_unique_filename}`
+- merge `JointContentAddressedStorage` into `ContentAddressedStorage`
+- remove `JointContentAddressedStorage`
+- remove `ContentAddressedStorage.{get_path,base_path}`
+
 ### version 0.1.5
 
 - add `ContentAddressedStorage.admit()`
