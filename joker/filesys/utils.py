@@ -56,6 +56,16 @@ def checksum_hexdigest(path: PathLike, algo='sha1', length=-1, offset=0):
     return hashobj.hexdigest()
 
 
+def b32_sha1sum(path: PathLike, length=-1, offset=0):
+    hashobj = checksum(path, algo='sha1', length=length, offset=offset)
+    return base64.b32encode(hashobj.digest()).upper().decode()
+
+
+def b64_sha384sum(path: PathLike, length=-1, offset=0):
+    hashobj = checksum(path, algo='sha384', length=length, offset=offset)
+    return base64.urlsafe_b64encode(hashobj.digest()).decode()
+
+
 def b64_encode_data_url(mediatype: str, content: bytes) -> str:
     b64 = base64.b64encode(content).decode('ascii')
     return 'data:{};base64,{}'.format(mediatype, b64)
