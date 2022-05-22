@@ -6,7 +6,6 @@ import hashlib
 import os
 from dataclasses import dataclass, field
 from functools import cached_property
-from os import PathLike
 from pathlib import Path
 from typing import Iterable
 
@@ -59,12 +58,12 @@ class ContentAddressedStorage:
             yield from os.walk(dir_)
 
     def iter_paths(self) -> Iterable[str]:
-        for dirpath, _, filenames in self._walk():
+        for dirpath, _, filenames in self.walk():
             for filename in filenames:
                 yield os.path.join(dirpath, filename)
 
     def iter_cids(self) -> Iterable[str]:
-        for triple in self._walk():
+        for triple in self.walk():
             yield from triple[2]
 
     def exists(self, cid: str) -> bool:
