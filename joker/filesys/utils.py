@@ -7,7 +7,10 @@ import hashlib
 import math
 import mimetypes
 import os
+import shutil
+from pathlib import Path
 from typing import Generator, Union, Iterable
+from uuid import uuid4
 
 PathLike = Union[str, os.PathLike]
 FileLike = Union[str, os.PathLike, Iterable[bytes]]
@@ -95,3 +98,21 @@ def guess_content_type(content: bytes):
         return 'image/png'
     if content.startswith(b'\xFF\xD8\xFF'):
         return 'image/jpeg'
+
+
+def gen_unique_filename(title: str = 'tmp'):
+    u = uuid4().bytes.hex().upper()
+    return f'{title}.{u}.part'
+
+
+def moves(old: Path, new: Path):
+    # old and new are possibly on different volumes
+    # tmp and new are surely on the same volume
+    new.parent.mkdir(parents=True, exist_ok=True)
+    tmp = new.parent / gen_unique_filename(new.name)
+    try:
+        shutil.move(old, tmp)
+        os.rename(tmp, new)
+    finally:
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)

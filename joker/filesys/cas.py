@@ -4,34 +4,14 @@ from __future__ import annotations
 
 import hashlib
 import os
-import shutil
 from dataclasses import dataclass, field
 from functools import cached_property
 from os import PathLike
 from pathlib import Path
 from typing import Iterable
-from uuid import uuid4
 
 from joker.filesys import utils
 from joker.filesys.utils import PathLike
-
-
-def _gen_unique_filename(title: str = 'tmp'):
-    u = uuid4().bytes.hex().upper()
-    return f'{title}.{u}.part'
-
-
-def _move_safely(old: Path, new: Path):
-    # old and new are possibly on different volumes
-    # tmp and new are surely on the same volume
-    new.parent.mkdir(parents=True, exist_ok=True)
-    tmp = new.parent / _gen_unique_filename(new.name)
-    try:
-        shutil.move(old, tmp)
-        os.rename(tmp, new)
-    finally:
-        if tmp.exists():
-            tmp.unlink(missing_ok=True)
 
 
 @dataclass
@@ -118,14 +98,14 @@ class ContentAddressedStorage:
 
     def save(self, chunks: Iterable[bytes]) -> str:
         ho = hashlib.new(self.hash_algo)
-        tmp = self._base_path / _gen_unique_filename()
+        tmp = self._base_path / utils.gen_unique_filename()
         try:
             with open(tmp, 'wb') as fout:
                 for chunk in chunks:
                     ho.update(chunk)
                     fout.write(chunk)
             cid = ho.hexdigest()
-            _move_safely(tmp, self.locate(cid))
+            utils.moves(tmp, self.locate(cid))
             ho = None
         finally:
             if ho is not None:
