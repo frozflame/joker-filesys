@@ -8,7 +8,7 @@ import shlex
 import subprocess
 import sys
 from glob import glob
-from typing import List
+from typing import List, Iterable
 
 from joker.filesys.dirs import DirectoryBoundToolkit
 
@@ -29,7 +29,7 @@ class Repository(DirectoryBoundToolkit):
         return self.under('.git', *paths)
 
     @classmethod
-    def find(cls, path: str) -> List['Repository']:
+    def find(cls, path: str) -> Iterable['Repository']:
         pattern = os.path.join(path, '*', '.git')
         dotgit_paths = glob(pattern)
         for dotgit_path in dotgit_paths:

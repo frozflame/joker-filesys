@@ -126,3 +126,19 @@ def moves(old: Path, new: Path):
     finally:
         if tmp.exists():
             tmp.unlink(missing_ok=True)
+
+
+def saves(path: PathLike, chunks: Iterable[bytes]):
+    """
+    Save content safely.
+    Args:
+        path: the file to be created or replaced
+        chunks: iterable of chunks of content to be saved
+    """
+    if not isinstance(path, Path):
+        path = Path(path)
+    tmp = path.with_name(gen_unique_filename())
+    with open(tmp, 'wb') as fout:
+        for chunk in chunks:
+            fout.write(chunk)
+    tmp.rename(path)
