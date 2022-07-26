@@ -41,7 +41,7 @@ class Repository(DirectoryBoundToolkit):
     def pull(self):
         cmd = ['git', 'pull']
         printcmd(cmd)
-        subprocess.run(cmd, cwd=self.base_dir)
+        subprocess.run(cmd, cwd=self.base_dir, check=True)
 
     def check_command(self, cmd: list):
         sp = subprocess.run(cmd, cwd=self.base_dir, capture_output=True)
