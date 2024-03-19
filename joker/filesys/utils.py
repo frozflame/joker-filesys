@@ -142,3 +142,11 @@ def saves(path: PathLike, chunks: Iterable[bytes]):
         for chunk in chunks:
             fout.write(chunk)
     tmp.rename(path)
+
+
+def find_regular_files(dirpath, **kwargs):
+    for root, dirs, files in os.walk(dirpath, **kwargs):
+        for name in files:
+            path = os.path.join(root, name)
+            if os.path.isfile(path):
+                yield path
