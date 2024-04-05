@@ -10,13 +10,13 @@ from pathlib import Path
 from typing import Iterable
 
 from joker.filesys import utils
-from joker.filesys.utils import PathLike
+from joker.filesys.utils import Pathlike, checksum_hexdigest
 
 
 @dataclass
 class ContentAddressedStorage:
-    base_dir: PathLike
-    dist_dirs: dict[str, PathLike] = field(default_factory=dict)
+    base_dir: Pathlike
+    dist_dirs: dict[str, Pathlike] = field(default_factory=dict)
     hash_algo: str = 'sha256'
     dir_depth: int = 2
     chunksize: int = 4096
@@ -110,6 +110,10 @@ class ContentAddressedStorage:
             if ho is not None:
                 tmp.unlink(missing_ok=True)
         return cid
+
+    def seize(self, path: Pathlike):
+        cid = checksum_hexdigest(path, 'sha256')
+        utils.moves(path, self.locate(cid))
 
 
 __all__ = ['ContentAddressedStorage']

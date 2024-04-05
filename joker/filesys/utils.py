@@ -12,11 +12,15 @@ from pathlib import Path
 from typing import Generator, Union, Iterable
 from uuid import uuid4
 
-PathLike = Union[str, os.PathLike]
-FileLike = Union[str, os.PathLike, Iterable[bytes]]
+Pathlike = Union[str, os.PathLike]
+Filelike = Union[str, os.PathLike, Iterable[bytes]]
+
+# for compatibility; will be removed in version 0.3.0
+PathLike = Pathlike
+FileLike = Filelike
 
 
-def read_as_chunks(path: PathLike, length=-1, offset=0, chunksize=65536) \
+def read_as_chunks(path: Pathlike, length=-1, offset=0, chunksize=65536) \
         -> Generator[bytes, None, None]:
     if length == 0:
         return
@@ -34,7 +38,7 @@ def read_as_chunks(path: PathLike, length=-1, offset=0, chunksize=65536) \
             chunksize = min(chunksize, length)
 
 
-def compute_checksum(path_or_chunks: FileLike, algo='sha1'):
+def compute_checksum(path_or_chunks: Filelike, algo='sha1'):
     hashobj = hashlib.new(algo) if isinstance(algo, str) else algo
     # path_or_chunks:str - a path
     if isinstance(path_or_chunks, str):
@@ -46,22 +50,22 @@ def compute_checksum(path_or_chunks: FileLike, algo='sha1'):
     return hashobj
 
 
-def checksum(path: PathLike, algo='sha1', length=-1, offset=0):
+def checksum(path: Pathlike, algo='sha1', length=-1, offset=0):
     chunks = read_as_chunks(path, length=length, offset=offset)
     return compute_checksum(chunks, algo=algo)
 
 
-def checksum_hexdigest(path: PathLike, algo='sha1', length=-1, offset=0):
+def checksum_hexdigest(path: Pathlike, algo='sha1', length=-1, offset=0):
     hashobj = checksum(path, algo=algo, length=length, offset=offset)
     return hashobj.hexdigest()
 
 
-def b32_sha1sum(path: PathLike, length=-1, offset=0):
+def b32_sha1sum(path: Pathlike, length=-1, offset=0):
     hashobj = checksum(path, algo='sha1', length=length, offset=offset)
     return base64.b32encode(hashobj.digest()).upper().decode()
 
 
-def b64_sha384sum(path: PathLike, length=-1, offset=0):
+def b64_sha384sum(path: Pathlike, length=-1, offset=0):
     hashobj = checksum(path, algo='sha384', length=length, offset=offset)
     return base64.urlsafe_b64encode(hashobj.digest()).decode()
 
@@ -71,7 +75,7 @@ def b64_encode_data_url(mediatype: str, content: bytes) -> str:
     return 'data:{};base64,{}'.format(mediatype, b64)
 
 
-def b64_encode_local_file(path: PathLike) -> str:
+def b64_encode_local_file(path: Pathlike) -> str:
     mediatype = mimetypes.guess_type(path)[0]
     with open(path, 'rb') as fin:
         return b64_encode_data_url(mediatype, fin.read())
@@ -115,7 +119,7 @@ def gen_unique_filename(title: str = 'tmp'):
     return f'{title}.{u}.part'
 
 
-def moves(old: Path, new: Path):
+def moves(old: Pathlike, new: Path):
     # old and new are possibly on different volumes
     # tmp and new are surely on the same volume
     new.parent.mkdir(parents=True, exist_ok=True)
@@ -128,7 +132,7 @@ def moves(old: Path, new: Path):
             tmp.unlink(missing_ok=True)
 
 
-def saves(path: PathLike, chunks: Iterable[bytes]):
+def saves(path: Pathlike, chunks: Iterable[bytes]):
     """
     Save content safely.
     Args:
