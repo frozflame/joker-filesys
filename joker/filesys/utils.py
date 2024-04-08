@@ -154,3 +154,10 @@ def find_regular_files(dirpath, **kwargs):
             path = os.path.join(root, name)
             if os.path.isfile(path):
                 yield path
+
+
+def infer_st_dev(path: Pathlike) -> int:
+    while True:
+        if os.path.exists(path):
+            return os.stat(path).st_dev
+        path = os.path.split(path)[0]

@@ -68,5 +68,17 @@ class Repository(DirectoryBoundToolkit):
         })
         return info
 
+    def get_content(self, commit_id: str, path: str) -> bytes:
+        """
+        Args:
+            commit_id: e.g. 6fd0789084610ab7f1d87681d9cc189ab15102b1
+            path: relative path inside the git repository
+        Returns:
+            content of the file of the version
+        """
+        cmd = ['git', 'show', f'{commit_id}:{path}']
+        sp = subprocess.run(cmd, capture_output=True, cwd=self.base_dir)
+        return sp.stdout
+
 
 __all__ = ['Repository']

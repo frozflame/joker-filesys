@@ -111,9 +111,10 @@ class ContentAddressedStorage:
                 tmp.unlink(missing_ok=True)
         return cid
 
-    def seize(self, path: Pathlike):
-        cid = checksum_hexdigest(path, 'sha256')
-        utils.moves(path, self.locate(cid))
+    def seize(self, src_path: Pathlike) -> str:
+        cid = checksum_hexdigest(src_path, self.hash_algo)
+        utils.moves(src_path, self.locate(cid))
+        return cid
 
 
 __all__ = ['ContentAddressedStorage']
