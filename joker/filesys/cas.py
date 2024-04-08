@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import os
-from dataclasses import dataclass, field
-from functools import cached_property
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
@@ -15,46 +14,26 @@ from joker.filesys.utils import Pathlike, checksum_hexdigest
 
 @dataclass
 class ContentAddressedStorage:
-    base_dir: Pathlike
-    dist_dirs: dict[str, Pathlike] = field(default_factory=dict)
-    hash_algo: str = 'sha256'
+    base_dirs: list[Path]
+    hash_algo: str = "sha256"
     dir_depth: int = 2
     chunksize: int = 4096
 
     @classmethod
-    def from_config(cls, cfg: dict | str):
-        if isinstance(cfg, str):
-            return cls(cfg)
+    def from_config(cls, cfg: dict | list[str]):
+        if isinstance(cfg, list):
+            return cls([Path(p) for p in cfg])
         return cls(**cfg)
 
-    @cached_property
-    def _prefix_lengths(self) -> list[int]:
-        lengths = {len(prefix) for prefix in self.dist_dirs}
-        lengths = list(lengths)
-        lengths.sort(reverse=True)
-        return lengths
-
-    @cached_property
-    def _base_path(self) -> Path:
-        return Path(self.base_dir)
-
-    def _locate_dir(self, cid: str) -> Path:
-        if not self.dist_dirs:
-            return self._base_path
-        for length in self._prefix_lengths:
-            prefix = cid[:length]
-            if prefix in self.dist_dirs:
-                return Path(self.dist_dirs[prefix])
-        return self._base_path
-
-    def locate(self, cid: str) -> Path:
-        dir_ = self._locate_dir(cid)
+    def locate(self, cid: str) -> Path | None:
         names = utils.spread_by_prefix(cid, self.dir_depth)
-        return dir_.joinpath(*names)
+        for base_dir in self.base_dirs:
+            path = base_dir.joinpath(*names)
+            if path.is_file():
+                return path
 
     def walk(self) -> Iterable[tuple]:
-        yield from os.walk(self.base_dir)
-        for dir_ in self.dist_dirs.values():
+        for dir_ in self.base_dirs:
             yield from os.walk(dir_)
 
     def iter_paths(self) -> Iterable[str]:
@@ -67,27 +46,22 @@ class ContentAddressedStorage:
             yield from triple[2]
 
     def exists(self, cid: str) -> bool:
-        path = self.locate(cid)
-        return path.is_file()
+        return bool(self.locate(cid))
 
     def delete(self, cid: str):
         path = self.locate(cid)
-        if path.is_file():
+        if path:
             path.unlink(missing_ok=True)
 
     def load(self, cid: str) -> Iterable[bytes]:
         path = self.locate(cid)
-        if not path.is_file():
+        if not path:
             return
-        with open(path, 'rb') as fin:
+        with open(path, "rb") as fin:
             chunk = fin.read(self.chunksize)
             while chunk:
                 yield chunk
                 chunk = fin.read(self.chunksize)
-
-    def guess_content_type(self, cid: str):
-        with open(self.locate(cid), 'rb') as fin:
-            return utils.guess_content_type(fin.read(64))
 
     def check_integrity(self, cid: str) -> bool:
         ho = hashlib.new(self.hash_algo)
@@ -95,16 +69,20 @@ class ContentAddressedStorage:
             ho.update(chunk)
         return ho.hexdigest() == cid
 
+    def _locate_new_file(self, cid: str) -> Path:
+        names = utils.spread_by_prefix(cid, self.dir_depth)
+        return self.base_dirs[0].joinpath(*names)
+
     def save(self, chunks: Iterable[bytes]) -> str:
         ho = hashlib.new(self.hash_algo)
-        tmp = self._base_path / utils.gen_unique_filename()
+        tmp = self.base_dirs[0] / utils.gen_unique_filename()
         try:
-            with open(tmp, 'wb') as fout:
+            with open(tmp, "wb") as fout:
                 for chunk in chunks:
                     ho.update(chunk)
                     fout.write(chunk)
             cid = ho.hexdigest()
-            utils.moves(tmp, self.locate(cid))
+            utils.moves(tmp, self._locate_new_file(cid))
             ho = None
         finally:
             if ho is not None:
@@ -113,8 +91,8 @@ class ContentAddressedStorage:
 
     def seize(self, src_path: Pathlike) -> str:
         cid = checksum_hexdigest(src_path, self.hash_algo)
-        utils.moves(src_path, self.locate(cid))
+        utils.moves(src_path, self._locate_new_file(cid))
         return cid
 
 
-__all__ = ['ContentAddressedStorage']
+__all__ = ["ContentAddressedStorage"]
