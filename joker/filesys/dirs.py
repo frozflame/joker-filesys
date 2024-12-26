@@ -18,14 +18,14 @@ class DirectoryBoundToolkit:
 
     def sha1_rename(self, filename: str) -> str:
         old_path = self.base_dir / filename
-        sha1 = utils.checksum_hexdigest(str(old_path), algo='sha1')
+        sha1 = utils.checksum_hexdigest(str(old_path), algo="sha1")
         new_path = old_path.with_stem(sha1)
         old_path.rename(new_path)
         return new_path.name
 
     @staticmethod
     def gen_tmp_filename(ext: str) -> str:
-        return f'tmp.{uuid.uuid1()}{ext}'
+        return f"tmp.{uuid.uuid1()}{ext}"
 
     def under(self, *paths) -> str:
         return os.path.join(self.base_dir, *paths)
@@ -36,21 +36,24 @@ class DirectoryBoundToolkit:
 
     under_base_dir = under
 
-    def read_as_chunks(self, path: str, length=-1, offset=0, chunksize=65536) \
-            -> Generator[bytes, None, None]:
+    def read_as_chunks(
+        self, path: str, length=-1, offset=0, chunksize=65536
+    ) -> Generator[bytes, None, None]:
         path = self.under_base_dir(path)
         return utils.read_as_chunks(
-            path, length=length,
-            offset=offset, chunksize=chunksize,
+            path,
+            length=length,
+            offset=offset,
+            chunksize=chunksize,
         )
 
-    def checksum_hexdigest(self, path: str, algo='sha1') -> str:
+    def checksum_hexdigest(self, path: str, algo="sha1") -> str:
         path = self.under_base_dir(path)
         return utils.checksum_hexdigest(path, algo=algo)
 
     def read_as_binary(self, path: str) -> bytes:
         path = self.under_base_dir(path)
-        with open(path, 'rb') as fin:
+        with open(path, "rb") as fin:
             return fin.read()
 
     def read_as_base64_data_url(self, path: str) -> str:
@@ -59,7 +62,7 @@ class DirectoryBoundToolkit:
 
     def save_as_file(self, path: str, chunks):
         path = self.under_base_dir(path)
-        with open(path, 'wb') as fout:
+        with open(path, "wb") as fout:
             for chunk in chunks:
                 fout.write(chunk)
 
@@ -70,13 +73,13 @@ class MappedDirectory(DirectoryBoundToolkit):
         # Note:
         # urllib.parse.urljoin('/a/b', 'c.jpg') => '/a/c.jpg'
         # urllib.parse.urljoin('/a/b/', 'c.jpg') => '/a/b/c.jpg'
-        if not base_url.endswith('/'):
-            base_url += '/'
+        if not base_url.endswith("/"):
+            base_url += "/"
         self.base_url = base_url
 
     def __repr__(self) -> str:
         c = self.__class__.__name__
-        return '{}({!r}, {!r})'.format(c, self.base_dir, self.base_url)
+        return "{}({!r}, {!r})".format(c, self.base_dir, self.base_url)
 
     def join_url(self, path: str) -> str:
         return urllib.parse.urljoin(self.base_url, path)

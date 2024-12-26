@@ -20,14 +20,15 @@ PathLike = Pathlike
 FileLike = Filelike
 
 
-def read_as_chunks(path: Pathlike, length=-1, offset=0, chunksize=65536) \
-        -> Generator[bytes, None, None]:
+def read_as_chunks(
+    path: Pathlike, length=-1, offset=0, chunksize=65536
+) -> Generator[bytes, None, None]:
     if length == 0:
         return
     if length < 0:
-        length = float('inf')
+        length = float("inf")
     chunksize = min(chunksize, length)
-    with open(path, 'rb') as fin:
+    with open(path, "rb") as fin:
         fin.seek(offset)
         while chunksize:
             chunk = fin.read(chunksize)
@@ -38,7 +39,7 @@ def read_as_chunks(path: Pathlike, length=-1, offset=0, chunksize=65536) \
             chunksize = min(chunksize, length)
 
 
-def compute_checksum(path_or_chunks: Filelike, algo='sha1'):
+def compute_checksum(path_or_chunks: Filelike, algo="sha1"):
     hashobj = hashlib.new(algo) if isinstance(algo, str) else algo
     # path_or_chunks:str - a path
     if isinstance(path_or_chunks, str):
@@ -50,34 +51,34 @@ def compute_checksum(path_or_chunks: Filelike, algo='sha1'):
     return hashobj
 
 
-def checksum(path: Pathlike, algo='sha1', length=-1, offset=0):
+def checksum(path: Pathlike, algo="sha1", length=-1, offset=0):
     chunks = read_as_chunks(path, length=length, offset=offset)
     return compute_checksum(chunks, algo=algo)
 
 
-def checksum_hexdigest(path: Pathlike, algo='sha1', length=-1, offset=0):
+def checksum_hexdigest(path: Pathlike, algo="sha1", length=-1, offset=0):
     hashobj = checksum(path, algo=algo, length=length, offset=offset)
     return hashobj.hexdigest()
 
 
 def b32_sha1sum(path: Pathlike, length=-1, offset=0):
-    hashobj = checksum(path, algo='sha1', length=length, offset=offset)
+    hashobj = checksum(path, algo="sha1", length=length, offset=offset)
     return base64.b32encode(hashobj.digest()).upper().decode()
 
 
 def b64_sha384sum(path: Pathlike, length=-1, offset=0):
-    hashobj = checksum(path, algo='sha384', length=length, offset=offset)
+    hashobj = checksum(path, algo="sha384", length=length, offset=offset)
     return base64.urlsafe_b64encode(hashobj.digest()).decode()
 
 
 def b64_encode_data_url(mediatype: str, content: bytes) -> str:
-    b64 = base64.b64encode(content).decode('ascii')
-    return 'data:{};base64,{}'.format(mediatype, b64)
+    b64 = base64.b64encode(content).decode("ascii")
+    return "data:{};base64,{}".format(mediatype, b64)
 
 
 def b64_encode_local_file(path: Pathlike) -> str:
     mediatype = mimetypes.guess_type(path)[0]
-    with open(path, 'rb') as fin:
+    with open(path, "rb") as fin:
         return b64_encode_data_url(mediatype, fin.read())
 
 
@@ -86,7 +87,7 @@ def spread_by_prefix(filename: str, depth: int = 2, width: int = 2) -> list:
     for i in range(depth):
         start = i * width
         stop = start + width
-        part = filename[start: stop]
+        part = filename[start:stop]
         if not part:
             break
         names.append(part)
@@ -95,8 +96,8 @@ def spread_by_prefix(filename: str, depth: int = 2, width: int = 2) -> list:
 
 
 def compute_collision_probability(buckets: int, balls: int) -> float:
-    x = - balls * (balls - 1) / 2. / buckets
-    return 1. - math.exp(x)
+    x = -balls * (balls - 1) / 2.0 / buckets
+    return 1.0 - math.exp(x)
 
 
 def random_hex(length=24) -> str:
@@ -106,17 +107,17 @@ def random_hex(length=24) -> str:
 
 
 def guess_content_type(content: bytes):
-    if content.startswith(b'%PDF-'):
-        return 'application/pdf'
-    if content.startswith(b'\x89PNG\r\n\x1a\n'):
-        return 'image/png'
-    if content.startswith(b'\xFF\xD8\xFF'):
-        return 'image/jpeg'
+    if content.startswith(b"%PDF-"):
+        return "application/pdf"
+    if content.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if content.startswith(b"\xFF\xD8\xFF"):
+        return "image/jpeg"
 
 
-def gen_unique_filename(title: str = 'tmp'):
+def gen_unique_filename(title: str = "tmp"):
     u = uuid4().bytes.hex().upper()
-    return f'{title}.{u}.part'
+    return f"{title}.{u}.part"
 
 
 def moves(old: Pathlike, new: Path):
@@ -142,7 +143,7 @@ def saves(path: Pathlike, chunks: Iterable[bytes]):
     if not isinstance(path, Path):
         path = Path(path)
     tmp = path.with_name(gen_unique_filename())
-    with open(tmp, 'wb') as fout:
+    with open(tmp, "wb") as fout:
         for chunk in chunks:
             fout.write(chunk)
     tmp.rename(path)

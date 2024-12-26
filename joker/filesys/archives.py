@@ -15,9 +15,9 @@ class Archive:
 
     @cached_property
     def entry_path(self) -> str:
-        paths = [p for p in self.inner_paths if p.endswith('index.html')]
+        paths = [p for p in self.inner_paths if p.endswith("index.html")]
         if not paths:
-            return ''
+            return ""
         return min(paths, key=lambda s: len(s))
 
     def extract_as_bytes(self, inner_path: str) -> bytes:
@@ -27,23 +27,23 @@ class Archive:
         raise NotImplementedError
 
     @staticmethod
-    def open(path: str) -> 'Archive':
-        if path.endswith('.zip'):
+    def open(path: str) -> "Archive":
+        if path.endswith(".zip"):
             return ZipArchive(path)
-        tar_suffixes = ['.tar', '.tgz', '.tar.gz']
+        tar_suffixes = [".tar", ".tgz", ".tar.gz"]
         for suffix in tar_suffixes:
             if path.endswith(suffix):
                 return TarArchive(path)
 
     def __enter__(self):
-        archive_file = getattr(self, 'archive_file', None)
-        if hasattr(archive_file, '__enter__'):
+        archive_file = getattr(self, "archive_file", None)
+        if hasattr(archive_file, "__enter__"):
             archive_file.__enter__()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        archive_file = getattr(self, 'archive_file', None)
-        if hasattr(archive_file, '__exit__'):
+        archive_file = getattr(self, "archive_file", None)
+        if hasattr(archive_file, "__exit__"):
             archive_file.__exit__(exc_type, exc_val, exc_tb)
         return self
 
