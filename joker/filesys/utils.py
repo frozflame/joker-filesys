@@ -106,13 +106,35 @@ def random_hex(length=24) -> str:
     return bs.hex()[:length]
 
 
+_prefix_and_content_type_pairs = [
+    (b"%PDF-", "application/pdf"),
+    (b"\x89PNG\r\n\x1a\n", "image/png"),
+    (b"\xFF\xD8\xFF", "image/jpeg"),
+    (b"\x52\x61\x72\x21\x1A\x07", "application/x-rar-compressed"),
+    (b"\x7F\x45\x4C\x46", "application/x-elf"),
+    (b"\x51\x4C\x69\x74\x65\x20\x66\x6F\x72\x6D\x61\x74\x20\x33\x00", "sqlite3"),
+    (b"\x00\x00\x00\x0C\x6A\x50\x20\x20\x0D\x0A\x87\x0A", "image/jpm"),
+    (b"\x1F\x8B", "application/gzip"),
+    (b"\x37\x7A\xBC\xAF\x27\x1C", "application/x-7z-compressed"),
+    (b"\xFD\x37\x7A\x58\x5A\x00", "xz"),
+    (b"\x4D\x53\x43\x46", "application/vnd.ms-cab-compressed"),
+    (b"\x38\x42\x50\x53", "image/vnd.adobe.photoshop"),
+    (b"\xFF\xFB", "audio/mpeg"),
+    (b"\xFF\xF3", "audio/mpeg"),
+    (b"\xFF\xF2", "audio/mpeg"),
+    (b"\x49\x44\x33", "audio/mpeg"),
+    (b"\x43\x44\x30\x30\x31", "iso"),
+    (b"\x66\x4C\x61\x43", "flac"),
+    (b"\x4D\x54\x68\x64", "audio/midi"),
+]
+
+
 def guess_content_type(content: bytes):
-    if content.startswith(b"%PDF-"):
-        return "application/pdf"
-    if content.startswith(b"\x89PNG\r\n\x1a\n"):
-        return "image/png"
-    if content.startswith(b"\xFF\xD8\xFF"):
-        return "image/jpeg"
+    # see also: python-magic (https://pypi.org/project/python-magic/)
+    # see also: file (https://www.man7.org/linux/man-pages/man1/file.1.html)
+    for prfix, content_type in _prefix_and_content_type_pairs:
+        if content.startswith(prfix):
+            return content_type
 
 
 def gen_unique_filename(title: str = "tmp"):

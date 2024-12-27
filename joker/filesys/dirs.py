@@ -7,7 +7,7 @@ import os
 import urllib.parse
 import uuid
 from pathlib import Path
-from typing import Generator
+from typing import Generator, Iterable
 
 from joker.filesys import utils
 
@@ -97,3 +97,41 @@ class MappedDirectory(DirectoryBoundToolkit):
     def convert_url_to_local_path(self, url: str) -> str:
         path = self.relative_to_base_url(url)
         return self.under(path)
+
+
+@dataclasses.dataclass
+class DirectoryPreparation:
+    # [(id, path), (id, path), ...]
+    targets: list[tuple[str, str]]
+
+    def fetch(self, cid: str) -> Iterable[bytes] | None:
+        raise NotImplementedError
+
+    def write(self, cid: str, path: str):
+        content = self.fetch(cid)
+        if content is None:
+            os.makedirs(path, exist_ok=True)
+            return
+        if isinstance(content, bytes):
+            content = [content]
+        dir_, filename = os.path.split(path)
+        if dir_:
+            # dir_ might be an empty string
+            os.makedirs(dir_, exist_ok=True)
+        utils.saves(path, content)
+
+    def apply(self):
+        for cid, path in self.targets:
+            self.write(cid, path)
+
+    @classmethod
+    def parse(cls, lines: Iterable[str]) -> "DirectoryPreparation":
+        # TODO: hint return type as type[Self]
+        targets = []
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            cid, path = line.split(None, 1)
+            targets.append((cid, path))
+        return cls(targets)

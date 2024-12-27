@@ -1,6 +1,10 @@
 Changes of joker-filesys
 ------------------------
 
+ver 0.4.1
+- add DirectoryPreparation
+- mod guess_content_type()
+
 ver 0.4.0
 - require python >= 3.9
 - format with Black
